@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mysql>
+
+    <!--initialOperation>
+        <id>1</id>
+        <type>create</type>
+        <name>testTable</name>
+        <initialContent>create table testTable(ID VARCHAR(30) PRIMARY KEY, NAME VARCHAR(30));</initialContent>
+    </initialOperation-->
+
+
+
+    <operation>
+        <id>1</id>
+        <type>query</type>
+        <name>validAdmin</name>
+        <content>select ID from users where name='admin' and passwd=? limit 1;</content>
+    </operation>
+    <operation id="2" type="query" name="valideUser">
+        <id>2</id>
+        <type>query</type>
+        <name>validUser</name>
+        <content>select ID from users where name=? and passwd=? limit 1;</content>
+    </operation>
+
+</mysql>

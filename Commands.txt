@@ -4,3 +4,32 @@ mvn clean install
 java -jar .\target\restService-0.1.0.jar
 
 http://localhost:8081/greeting?name=fudong
+
+configfile:
+https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+guides:
+https://spring.io/guides
+
+https://docs.spring.io/spring-boot/docs/2.1.1.RELEASE/
+https://docs.spring.io/spring-boot/docs/2.1.1.RELEASE/reference/htmlsingle/
+
+
+configs:
+server.ssl.enabled=true # Whether to enable SSL support
+
+2.alicloud
+mysql:
+md5sum mysql80-community-release-el7-1.noarch.rpm
+sudo rpm -ivh mysql80-community-release-el7-1.noarch.rpm
+sudo yum install mysql-server
+sudo systemctl start mysqld(sudo systemctl disable mysqld)
+sudo systemctl status mysqld
+sudo grep 'temporary password' /var/log/mysqld.log(root@localhost: cToTaqie6h,R)
+sudo mysql_secure_installation
+QAZwsx123!@#
+
+show databases;
+use mysql;
+show tables;
+create database RestServiceDB;
+use RestServiceDB;
