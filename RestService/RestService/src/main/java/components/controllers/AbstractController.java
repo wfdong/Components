@@ -20,7 +20,8 @@ public abstract class AbstractController {
 	
 	public AbstractController() throws JAXBException, FileNotFoundException{
 		if(mysqls==null) {
-			File file = new File("src\\main\\resources\\mysqlOperations.xml");
+			//File file = new File("src\\main\\resources\\mysqlOperations.xml");
+			File file = new File("/root/RestService/mysqlOperations.xml");
 			JAXBContext jaxbContext = JAXBContext.newInstance(Mysqls.class);
 			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 			Mysqls mysqloperations = (Mysqls) unmarshaller.unmarshal(file);

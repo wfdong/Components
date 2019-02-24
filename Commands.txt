@@ -1,3 +1,7 @@
+47.105.81.242
+Roger1.3@
+scp .\apache-tomcat-9.0.14.tar.gz root@47.105.81.242:/root
+
 1.
 mvn clean install
 ./mvnw clean package
@@ -33,3 +37,18 @@ use mysql;
 show tables;
 create database RestServiceDB;
 use RestServiceDB;
+
+
+
+
+grant all privileges on RestServiceDB.* to usr_name@'%' identified by "QAZwsx123!@#";
+
+GRANT ALL PRIVILEGES ON *.* TO root@'%' IDENTIFIED BY 'QAZwsx123!@#' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO root@202.127.210.2 IDENTIFIED BY ‘QAZwsx123!@#‘ WITH GRANT OPTION;
+grant all privileges on clothes.* to 'root'@'localhost' identified by 'password';
+
+flush privileges;
+
+insert into users(ID,NAME,PASSWD,REG_DATE,UPDATE_DATE) values('1000000001','racemed','unico1',now(),now());
+
+

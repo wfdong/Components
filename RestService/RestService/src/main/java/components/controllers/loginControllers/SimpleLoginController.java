@@ -7,6 +7,7 @@ import javax.xml.bind.JAXBException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,7 +48,7 @@ public class SimpleLoginController extends AbstractController{
 		}
 	}
     
-    @RequestMapping({"/login","/index","/"})
+	@RequestMapping({"/login","/traceLogin"})
     public Response login(@RequestParam(value="username", defaultValue="") String username, 
     		@RequestParam(value="passwd", defaultValue="") String passwd) {
     	String ID_db = mysqlCRUDService.isValidDBUser(mysqls.get("2").getContent(), username, passwd);
@@ -58,6 +59,5 @@ public class SimpleLoginController extends AbstractController{
     		return new SimpleLogin(ID_db, 0, String.format(template, "failed!"));
     	}
     }
-    
     
 }

@@ -16,7 +16,7 @@
         <name>validAdmin</name>
         <content>select ID from users where name='admin' and passwd=? limit 1;</content>
     </operation>
-    <operation id="2" type="query" name="valideUser">
+    <operation>
         <id>2</id>
         <type>query</type>
         <name>validUser</name>

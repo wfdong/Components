@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Trace View</title>
+<meta charset="UTF-8">
+<script src="../../js/go-debug.js"></script>
+<script id="code">
+  function init() {
+    if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
+    var $ = go.GraphObject.make;  // for conciseness in defining templates
+    myDiagram =
+      $(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
+        {
+          // have mouse wheel events zoom in and out instead of scroll up and down
+          "toolManager.mouseWheelBehavior": go.ToolManager.WheelZoom,
+          // support double-click in background creating a new node
+          "clickCreatingTool.archetypeNodeData": { text: "new node" },
+          // enable undo & redo
+          "undoManager.isEnabled": true
+        });
+    // when the document is modified, add a "*" to the title and enable the "Save" button
+    myDiagram.addDiagramListener("Modified", function(e) {
+      var button = document.getElementById("SaveButton");
+      if (button) button.disabled = !myDiagram.isModified;
+      var idx = document.title.indexOf("*");
+      if (myDiagram.isModified) {
+        if (idx < 0) document.title += "*";
+      } else {
+        if (idx >= 0) document.title = document.title.substr(0, idx);
+      }
+    });
+    // define the Node template
+    myDiagram.nodeTemplate =
+      $(go.Node, "Auto",
+        new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+        // define the node's outer shape, which will surround the TextBlock
+        $(go.Shape, "RoundedRectangle",
+          {
+            parameter1: 20,  // the corner has a large radius
+            fill: $(go.Brush, "Linear", { 0: "rgb(254, 201, 0)", 1: "rgb(254, 162, 0)" }),
+            stroke: null,
+            portId: "",  // this Shape is the Node's port, not the whole Node
+            fromLinkable: true, fromLinkableSelfNode: true, fromLinkableDuplicates: true,
+            toLinkable: true, toLinkableSelfNode: true, toLinkableDuplicates: true,
+            cursor: "pointer"
+          },new go.Binding('fill')),
+        $(go.TextBlock,
+          {
+            font: "bold 11pt helvetica, bold arial, sans-serif",
+            editable: true  // editing the text automatically updates the model data
+          },
+          new go.Binding("text").makeTwoWay(),
+		  new go.Binding("details"))
+      );
+    // unlike the normal selection Adornment, this one includes a Button
+    myDiagram.nodeTemplate.selectionAdornmentTemplate =
+      $(go.Adornment, "Spot",
+        $(go.Panel, "Auto",
+          $(go.Shape, { fill: null, stroke: "blue", strokeWidth: 2 }),
+          $(go.Placeholder)  // a Placeholder sizes itself to the selected Node
+        ),
+        // the button to create a "next" node, at the top-right corner
+        $("Button",
+          {
+            alignment: go.Spot.TopRight,
+            click: closeWindow  // this function is defined below
+          },
+          $(go.Shape, "XLine", { width: 6, height: 6 })
+        ), // end button
+		$("Button",
+          {
+            alignment: go.Spot.Center,
+            click: getDetailData  // this function is defined below
+          },
+          $(go.Shape, "PlusLine", { width: 6, height: 6 })
+        ) // end button
+      ); // end Adornment
+    // clicking the button inserts a new node to the right of the selected node,
+    // and adds a link to that new node
+    function closeWindow(e, obj) {
+	  e.diagram.model.removeNodeData(obj.part.adornedPart.data);
+      /*var adornment = obj.part;
+      var diagram = e.diagram;
+      diagram.startTransaction("Add State");
+      // get the node data for which the user clicked the button
+      var fromNode = adornment.adornedPart;
+      var fromData = fromNode.data;
+      // create a new "State" data object, positioned off to the right of the adorned Node
+      var toData = { text: "new" };
+      var p = fromNode.location.copy();
+      p.x += 200;
+      toData.loc = go.Point.stringify(p);  // the "loc" property is a string, not a Point object
+      // add the new node data to the model
+      var model = diagram.model;
+      model.addNodeData(toData);
+      // create a link data from the old node data to the new node data
+      var linkdata = {
+        from: model.getKeyForNodeData(fromData),  // or just: fromData.id
+        to: model.getKeyForNodeData(toData),
+        text: "transition"
+      };
+      // and add the link data to the model
+      model.addLinkData(linkdata);
+      // select the new Node
+      var newnode = diagram.findNodeForData(toData);
+      diagram.select(newnode);
+      diagram.commitTransaction("Add State");
+      // if the new node is off-screen, scroll the diagram to show the new node
+      diagram.scrollToRect(newnode.actualBounds);*/
+    }
+    // replace the default Link template in the linkTemplateMap
+    myDiagram.linkTemplate =
+      $(go.Link,  // the whole link panel
+        {
+          curve: go.Link.Bezier, adjusting: go.Link.Stretch,
+          reshapable: true, relinkableFrom: true, relinkableTo: true,
+          toShortLength: 3
+        },
+        new go.Binding("points").makeTwoWay(),
+        new go.Binding("curviness"),
+        $(go.Shape,  // the link shape
+          { strokeWidth: 1.5 },new go.Binding('stroke', 'color')),
+        $(go.Shape,  // the arrowhead
+          { toArrow: "standard", stroke: null },new go.Binding('stroke', 'color')),
+        $(go.Panel, "Auto",
+          $(go.Shape,  // the label background, which becomes transparent around the edges
+            {
+              fill: $(go.Brush, "Radial",
+                      { 0: "rgb(255, 255, 255)", 0.3: "rgb(255, 255, 255)", 1: "rgba(255, 255, 255, 0)" }),
+              stroke: null
+            }),
+          $(go.TextBlock, "transition",  // the label text
+            {
+              textAlign: "center",
+              font: "9pt helvetica, arial, sans-serif",
+              margin: 4,
+              editable: true  // enable in-place editing
+            },
+            // editing the text automatically updates the model data
+            new go.Binding("text").makeTwoWay()),
+			new go.Binding("details")
+        )
+      );
+	  myDiagram.linkTemplate.selectionAdornmentTemplate = 
+	  $(go.Adornment, "Spot",
+        $(go.Panel, "Auto",
+          $(go.Shape, { fill: null, stroke: "white", strokeWidth: 2 }),
+          $(go.Placeholder)  // a Placeholder sizes itself to the selected Node
+        ),
+        // the button to create a "next" node, at the top-right corner
+        $("Button",
+          {
+            alignment: go.Spot.TopRight,
+            click: getDetailData  // this function is defined below
+          },
+          $(go.Shape, "PlusLine", { width: 6, height: 6 })
+        ) // end button
+      );
+	  
+	  function getDetailData(e, obj) {
+      var adornment = obj.part;
+      var diagram = e.diagram;
+      diagram.startTransaction("Add State");
+      // get the node data for which the user clicked the button
+      var fromNode = adornment.adornedPart;
+      var fromData = fromNode.data;
+      // create a new "State" data object, positioned off to the right of the adorned Node
+	  if(fromData.text=="Mediator"){
+	      //myDiagram.model = go.Model.fromJson(fromData.details);
+		  addNodes(e, obj);
+	  }else if(fromData.details!=null){
+	      var toData = { text: fromData.details };
+          var p = fromNode.location.copy();
+          p.x += 100;
+          toData.loc = go.Point.stringify(p);  // the "loc" property is a string, not a Point object
+	      toData.fill = $(go.Brush, "Linear", { 0: "rgb(200, 200, 200)", 1: "rgb(254, 254, 254)" });
+          // add the new node data to the model
+          var model = diagram.model;
+          model.addNodeData(toData);
+          // create a link data from the old node data to the new node data
+      
+          // select the new Node
+          var newnode = diagram.findNodeForData(toData);
+          diagram.select(newnode);
+          diagram.commitTransaction("Add State");
+          // if the new node is off-screen, scroll the diagram to show the new node
+          diagram.scrollToRect(newnode.actualBounds);
+	  }
+      
+    }
+	
+	var nodes_to_delete_node = new Array();
+	var nodes_to_delete_tolink = new Array();
+	var nodes_to_delete_fromlink = new Array();
+	function addNodes(e, obj) {
+      var adornment = obj.part;
+      var diagram = e.diagram;
+      diagram.startTransaction("Add State");
+      // get the node data for which the user clicked the button
+      var fromNode = adornment.adornedPart;
+	  var fromNodeDetails = fromNode.data.details;
+	  var details_array = fromNodeDetails.split("||");
+	  for(j = 0,len=nodes_to_delete_node.length; j < len; j++) {
+	      var delnode = nodes_to_delete_node[j];//diagram.findNodeForData(nodes_to_delete_node[j]);
+		  e.diagram.model.removeNodeData(delnode);
+      }
+	  for(j = 0,len=nodes_to_delete_tolink.length; j < len; j++) {
+	      var delnode = nodes_to_delete_tolink[j];//diagram.findNodeForData(nodes_to_delete_tolink[j]);
+		  e.diagram.model.removeLinkData(delnode);
+      }
+	  for(j = 0,len=nodes_to_delete_fromlink.length; j < len; j++) {
+	      var delnode = nodes_to_delete_fromlink[j];//diagram.findNodeForData(nodes_to_delete_fromlink[j]);
+		  e.diagram.model.removeLinkData(delnode);
+      }
+	  diagram.commitTransaction("Add State");
+	  for(i=0,len=details_array.length;i<len;i++){
+	      var cur_detail = details_array[i];
+		  var to_device_msg = cur_detail.split("%%")[0];
+		  var from_device_msg = cur_detail.split("%%")[1];
+		  
+		  var to_device_msg_name = to_device_msg.split("@@")[0];
+		  var to_device_msg_details = to_device_msg.split("@@")[1];
+		  var to_device_msg_status = to_device_msg.split("@@")[2];
+		  
+		  var from_device_msg_name = from_device_msg.split("@@")[0];
+		  var from_device_msg_details = from_device_msg.split("@@")[1];
+		  var from_device_msg_status = from_device_msg.split("@@")[2];
+		  
+		  var fromData = fromNode.data;
+		  var toData = { text: to_device_msg_name };
+		  var p = fromNode.location.copy();
+          p.x += 300;
+		  p.y += i*100;
+          toData.loc = go.Point.stringify(p);
+		  var model = diagram.model;
+          model.addNodeData(toData);
+		  var to_color = "#7CFC00";
+		  var from_color = "#7CFC00";
+		  if(to_device_msg_status=="FAILED"){
+		      to_color="#FF0000";
+		  }
+		  if(from_device_msg_status=="FAILED"){
+		      from_color="#FF0000";
+		  }
+		  var linkdata_to = {
+              from: model.getKeyForNodeData(fromData),  // or just: fromData.id
+              to: model.getKeyForNodeData(toData),
+              text: "request",
+			  "color":to_color,
+			  "details":to_device_msg_details
+          };
+		  var linkdata_from = {
+              from: model.getKeyForNodeData(toData),  // or just: fromData.id
+              to: model.getKeyForNodeData(fromData),
+              text: "response",
+			  "color":from_color,
+			  "details":from_device_msg_details
+          };
+		  model.addLinkData(linkdata_from);
+		  model.addLinkData(linkdata_to);
+		  var newnode = diagram.findNodeForData(toData);
+          //diagram.select(newnode);
+		  nodes_to_delete_node[i]=toData;
+		  nodes_to_delete_tolink[i]=linkdata_to;
+		  nodes_to_delete_fromlink[i]=linkdata_from;
+          diagram.commitTransaction("Add State");
+          // if the new node is off-screen, scroll the diagram to show the new node
+          diagram.scrollToRect(newnode.actualBounds);
+	  }
+    }
+	
+	
+	  //var linkSelectionAdornmentTemplate. =
+    // read in the JSON data from the "mySavedModel" element
+    load();
+  }
+  // Show the diagram's model in JSON format
+  function save() {
+    document.getElementById("mySavedModel").value = myDiagram.model.toJson();
+  }
+  function load() {
+    //myDiagram.model = go.Model.fromJson(document.getElementById("mySavedModel").value);
+	var details = 'CDB@@POST /CDBProvisioningV7/CDBProvisioningV7 HTTP/1.1\r\nHost: hostname\nContent-Type: text/xml; charset=utf-8\nSOAPAction: ""\r\n@@SUCCESS%%CDB@@HTTP/1.1 200 OK\r\nContent-Type: text/xml;charset="utf-8"\r\n<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">@@SUCCESS||HLR@@POST /CDBProvisioningV7/CDBProvisioningV7 HTTP/1.1\r\nHost: hostname\nContent-Type: text/xml; charset=utf-8\nSOAPAction: ""\r\n@@SUCCESS%%HLR@@HTTP/1.1 200 OK\r\nContent-Type: text/xml;charset="utf-8"\r\n<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">@@FAILED';
+	var content = { "class": "go.GraphLinksModel",
+  "nodeKeyProperty": "id",
+  "nodeDataArray": [
+    { "id": 0, "loc": "0 0", "text": "frontend" , "details":"node details............"},
+    { "id": 1, "loc": "900 0", "text": "Mediator" , "details":details},
+	
+    { "id": 2, "loc": "0 100", "text": "frontend" },
+    { "id": 3, "loc": "900 100", "text": "Mediator", "details":details },
+	{ "id": 4, "loc": "0 200", "text": "frontend" },
+    { "id": 5, "loc": "900 200", "text": "Mediator" },
+	
+	
+	{ "id": 10000, "loc": "0 300", "text": "frontend" },
+    { "id": 10001, "loc": "900 300", "text": "Mediator" },
+	
+	
+    //{ "id": 4, "loc": "226 226", "text": "Wait" }
+  ],
+  "linkDataArray": [
+    //{ "from": 0, "to": 1, "text": "", "curviness": 0 },
+    
+	{ "from": 2, "to": 3, "text": "request", "color":"#7CFC00", "curviness": 20, 'details': 'TMFNAS {"name":"ConfigurableMobileService","description":"This is generic \nmobile service.","state":"active","serviceSpecification":{"name":"Configurable\nMobileService","href":"serviceCatalogManagement/v2/serviceSpecification/\nConfigurable MobileService/89b55fb6-9a96-4fd8-a860-d42328e1374e","version":\n"v1.0.0"},"relatedParty":[{"role":"InstanceConsumerGroup","id":"B2CConsumer\nAndSmallBusiness"},{"role":"PairingId","id":"B2CFORCE"}],"serviceCharacteristic":\n[{"name":"SERVICEPROFILE","value":[{"PROVISION":"TRUE","VALUE":"NORMAL"\n}]},{"name":"PAYMENTTYPE","value":[{"PROVISION":"TRUE","TYPE":\n"SUBSCRIPTION_RETAIL"}]},{"name":"SERVICEPROVIDERID","value":\n[{"PROVISION":"TRUE","VALUE":"0002","TYPE":"PUBLIC"}]},{"name":"SERVICEKEYS",\n"value":[{"PROVISION":"TRUE","UUID":"74ebdc86-5edb-40b1-b369-c26265005041"\n,"SERVICEID":"61417111111","IMSI":"505013400118787"}]}]}' },
+    { "from": 3, "to": 2, "text": "response", "color":"#7CFC00", "curviness": 20 },
+	{ "from": 4, "to": 5, "text": "request", "color":"#7CFC00", "curviness": 20 },
+    { "from": 5, "to": 4, "text": "response", "color":"#FF0000", "curviness": 20 },
+	
+	{ "from": 0, "to": 10000, "text": null,  "curviness": 0 },
+	{ "from": 1, "to": 10001, "text": "", "curviness": 0 },
+    
+  ]
+};
+	
+	
+	
+	/*{ "class": "go.GraphLinksModel",
+  "nodeKeyProperty": "id",
+  "nodeDataArray": [
+    { "id": 0, "loc": "120 120", "text": "Initial" },
+    { "id": 1, "loc": "330 120", "text": "First down" },
+    { "id": 2, "loc": "226 376", "text": "First up" },
+    { "id": 3, "loc": "60 276", "text": "Second down" },
+    { "id": 4, "loc": "226 226", "text": "Wait" }
+  ],
+  "linkDataArray": [
+    { "from": 0, "to": 0, "text": "up or timer", "curviness": -20 },
+    { "from": 0, "to": 1, "text": "down", "curviness": 20 },
+    { "from": 1, "to": 0, "text": "up (moved)\nPOST", "curviness": 20 },
+    { "from": 1, "to": 1, "text": "down", "curviness": -20 },
+    { "from": 1, "to": 2, "text": "up (no move)" },
+    { "from": 1, "to": 4, "text": "timer" },
+    { "from": 2, "to": 0, "text": "timer\nPOST" },
+    { "from": 2, "to": 3, "text": "down" },
+    { "from": 3, "to": 0, "text": "up\nPOST\n(dblclick\nif no move)" },
+    { "from": 3, "to": 3, "text": "down or timer", "curviness": 20 },
+    { "from": 4, "to": 0, "text": "up\nPOST" },
+    { "from": 4, "to": 4, "text": "down" }
+  ]
+};*/
+
+    myDiagram.model = go.Model.fromJson(content);
+  }
+</script>
+</head>
+<body onload="init()">
+<div id="sample">
+  <div id="myDiagramDiv" style="border: solid 1px black; width: 100%; height: 900px"></div>
+  
+ 
+</div>
+</body>
+</html>
