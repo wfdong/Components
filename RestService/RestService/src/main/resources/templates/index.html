@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head lang="en">
     <meta charset="UTF-8"/>
-    <title>Trace(https://github.com/wfdong/Components)</title>
+    <title>Trace(https://github.com/wfdong/traceView)</title>
     <link rel="stylesheet" href="/main.css" />
     <script id="code">
     function init() {
@@ -199,74 +199,78 @@
           // get the node data for which the user clicked the button
           var fromNode = adornment.adornedPart;
     	  var fromNodeDetails = fromNode.data.details;
-    	  var details_array = fromNodeDetails.split("||");
-    	  for(j = 0,len=nodes_to_delete_node.length; j < len; j++) {
-    	      var delnode = nodes_to_delete_node[j];//diagram.findNodeForData(nodes_to_delete_node[j]);
-    		  e.diagram.model.removeNodeData(delnode);
+          if (typeof(fromNodeDetails) != "undefined")
+          {
+        	  var details_array = fromNodeDetails.split("||");
+        	  for(j = 0,len=nodes_to_delete_node.length; j < len; j++) {
+        	      var delnode = nodes_to_delete_node[j];//diagram.findNodeForData(nodes_to_delete_node[j]);
+        		  e.diagram.model.removeNodeData(delnode);
+              }
+        	  for(j = 0,len=nodes_to_delete_tolink.length; j < len; j++) {
+        	      var delnode = nodes_to_delete_tolink[j];//diagram.findNodeForData(nodes_to_delete_tolink[j]);
+        		  e.diagram.model.removeLinkData(delnode);
+              }
+        	  for(j = 0,len=nodes_to_delete_fromlink.length; j < len; j++) {
+        	      var delnode = nodes_to_delete_fromlink[j];//diagram.findNodeForData(nodes_to_delete_fromlink[j]);
+        		  e.diagram.model.removeLinkData(delnode);
+              }
+        	  diagram.commitTransaction("Add State");
+        	  for(i=0,len=details_array.length;i<len;i++){
+        	      var cur_detail = details_array[i];
+        		  var to_device_msg = cur_detail.split("%%")[0];
+        		  var from_device_msg = cur_detail.split("%%")[1];
+        		  
+        		  var to_device_msg_name = to_device_msg.split("@@")[0];
+        		  var to_device_msg_details = to_device_msg.split("@@")[1];
+        		  var to_device_msg_status = to_device_msg.split("@@")[2];
+        		  
+        		  var from_device_msg_name = from_device_msg.split("@@")[0];
+        		  var from_device_msg_details = from_device_msg.split("@@")[1];
+        		  var from_device_msg_status = from_device_msg.split("@@")[2];
+        		  
+        		  var fromData = fromNode.data;
+        		  var toData = { text: to_device_msg_name };
+        		  var p = fromNode.location.copy();
+                  p.x += 300;
+        		  p.y += i*100;
+                  toData.loc = go.Point.stringify(p);
+        		  var model = diagram.model;
+                  model.addNodeData(toData);
+        		  var to_color = "#7CFC00";
+        		  var from_color = "#7CFC00";
+        		  if(to_device_msg_status=="FAILED"){
+        		      to_color="#FF0000";
+        		  }
+        		  if(from_device_msg_status=="FAILED"){
+        		      from_color="#FF0000";
+        		  }
+        		  var linkdata_to = {
+                      from: model.getKeyForNodeData(fromData),  // or just: fromData.id
+                      to: model.getKeyForNodeData(toData),
+                      text: "request",
+        			  "color":to_color,
+        			  "details":to_device_msg_details
+                  };
+        		  var linkdata_from = {
+                      from: model.getKeyForNodeData(toData),  // or just: fromData.id
+                      to: model.getKeyForNodeData(fromData),
+                      text: "response",
+        			  "color":from_color,
+        			  "details":from_device_msg_details
+                  };
+        		  model.addLinkData(linkdata_from);
+        		  model.addLinkData(linkdata_to);
+        		  var newnode = diagram.findNodeForData(toData);
+                  //diagram.select(newnode);
+        		  nodes_to_delete_node[i]=toData;
+        		  nodes_to_delete_tolink[i]=linkdata_to;
+        		  nodes_to_delete_fromlink[i]=linkdata_from;
+                  diagram.commitTransaction("Add State");
+                  // if the new node is off-screen, scroll the diagram to show the new node
+                  diagram.scrollToRect(newnode.actualBounds);
+        	  }
           }
-    	  for(j = 0,len=nodes_to_delete_tolink.length; j < len; j++) {
-    	      var delnode = nodes_to_delete_tolink[j];//diagram.findNodeForData(nodes_to_delete_tolink[j]);
-    		  e.diagram.model.removeLinkData(delnode);
-          }
-    	  for(j = 0,len=nodes_to_delete_fromlink.length; j < len; j++) {
-    	      var delnode = nodes_to_delete_fromlink[j];//diagram.findNodeForData(nodes_to_delete_fromlink[j]);
-    		  e.diagram.model.removeLinkData(delnode);
-          }
-    	  diagram.commitTransaction("Add State");
-    	  for(i=0,len=details_array.length;i<len;i++){
-    	      var cur_detail = details_array[i];
-    		  var to_device_msg = cur_detail.split("%%")[0];
-    		  var from_device_msg = cur_detail.split("%%")[1];
-    		  
-    		  var to_device_msg_name = to_device_msg.split("@@")[0];
-    		  var to_device_msg_details = to_device_msg.split("@@")[1];
-    		  var to_device_msg_status = to_device_msg.split("@@")[2];
-    		  
-    		  var from_device_msg_name = from_device_msg.split("@@")[0];
-    		  var from_device_msg_details = from_device_msg.split("@@")[1];
-    		  var from_device_msg_status = from_device_msg.split("@@")[2];
-    		  
-    		  var fromData = fromNode.data;
-    		  var toData = { text: to_device_msg_name };
-    		  var p = fromNode.location.copy();
-              p.x += 300;
-    		  p.y += i*100;
-              toData.loc = go.Point.stringify(p);
-    		  var model = diagram.model;
-              model.addNodeData(toData);
-    		  var to_color = "#7CFC00";
-    		  var from_color = "#7CFC00";
-    		  if(to_device_msg_status=="FAILED"){
-    		      to_color="#FF0000";
-    		  }
-    		  if(from_device_msg_status=="FAILED"){
-    		      from_color="#FF0000";
-    		  }
-    		  var linkdata_to = {
-                  from: model.getKeyForNodeData(fromData),  // or just: fromData.id
-                  to: model.getKeyForNodeData(toData),
-                  text: "request",
-    			  "color":to_color,
-    			  "details":to_device_msg_details
-              };
-    		  var linkdata_from = {
-                  from: model.getKeyForNodeData(toData),  // or just: fromData.id
-                  to: model.getKeyForNodeData(fromData),
-                  text: "response",
-    			  "color":from_color,
-    			  "details":from_device_msg_details
-              };
-    		  model.addLinkData(linkdata_from);
-    		  model.addLinkData(linkdata_to);
-    		  var newnode = diagram.findNodeForData(toData);
-              //diagram.select(newnode);
-    		  nodes_to_delete_node[i]=toData;
-    		  nodes_to_delete_tolink[i]=linkdata_to;
-    		  nodes_to_delete_fromlink[i]=linkdata_from;
-              diagram.commitTransaction("Add State");
-              // if the new node is off-screen, scroll the diagram to show the new node
-              diagram.scrollToRect(newnode.actualBounds);
-    	  }
+    	  
         }
     	
     	

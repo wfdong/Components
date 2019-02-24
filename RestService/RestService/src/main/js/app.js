@@ -10,18 +10,21 @@ const go = require('./go-debug');
 
 // end::vars[]
 
-
+//window.filename = "MED-4771_tmf-validation.trace";
 // tag::app[]
 class App extends React.Component{
 	constructor(props) {
 		super(props);
-		this.state = {id: "", loginStatus:"", responseBody:""};
+		this.handleSubmit = this.handleSubmit.bind(this);
+	    this.fileInput = React.createRef();
+	    //this.state = {filename : ""};
+		this.state = {id: "", loginStatus:"", responseBody:"", filename : "MED-4771_tmf-validation.trace"};
 	}
     componentDidMount(){
     	client({
 			method: 'GET',
 			//path: "/login?username=admin&passwd=admin"
-			path: "/getArrowView?filename=MED-4649_generic_rest_APNS_tmf1.trace"
+			path: "/getArrowView?filename="+this.state.filename
 		}).done(response => {
 			/*this.setState({
 	        	id:response.entity.id,
@@ -74,18 +77,91 @@ class App extends React.Component{
 					};
 			myDiagram.model = go.Model.fromJson(content);*/
 		});
-}
+       }
+    
+    handleSubmit(event) {
+	    event.preventDefault();
+	    /*alert(
+	      `Selected file - ${
+	        this.fileInput.current.files[0].name
+	      }`
+	    );*/
+	    const file = this.fileInput.current.files[0];
+	    const formData = new FormData();
+		  formData.append("filename", file);
+		  //filename = file.name;
+		  //const url = "http://localhost:8081/upload";
+		  const url = "http://47.105.81.242:8081/upload";
+		  fetch(url,{
+		      method:'POST',
+		      /*headers:{
+			      	'Content-Type':'multipart/form-data',
+			      },*/
+		      body:formData,
+		    })
+		    .then((response) => response.text() )
+		    .then((responseData)=>{
+		 
+		      console.log('responseData',responseData);
+		      alert("complete!！");
+		      //location.reload();
+		      //load();
+		      //this.state.filename = file.name;
+		      client({
+					method: 'GET',
+					//path: "/login?username=admin&passwd=admin"
+					path: "/getArrowView?filename="+file.name
+				}).done(response => {
+					/*this.setState({
+			        	id:response.entity.id,
+			        	loginStatus:response.entity.loginStatus,
+			        	responseBody:response.entity.responseBody
+			        });*/
+					var nodeDataArray = response.entity.nodeDataArray;
+					var linkDataArray = response.entity.linkDataArray;
+					linkDataArray.forEach(function(node){
+						node.curviness = 20;
+					});
+					var content = { "class": "go.GraphLinksModel",
+							  "nodeKeyProperty": "id",
+							  "nodeDataArray": nodeDataArray,
+							  "linkDataArray": linkDataArray
+					};
+							  
+					myDiagram.model = go.Model.fromJson(content);
+				});
+		    })
+		    .catch((error)=>{console.error('error',error)});
+	  }
 
+	  render() {
+	    return (
+	      <form onSubmit={this.handleSubmit} encType="multipart/form-data">
+	        <label>
+	          Upload file:
+	          <input type="file" ref={this.fileInput} />
+	        </label>
+	        <br />
+	        <button type="submit">Submit</button>
+	      </form>
+	    );
+	  }
 
+/*
 render(){
 	return(
 			<div><span>{this.state.id}</span> <span>{this.state.loginStatus}</span> <span>{this.state.responseBody}</span></div>
 	);
+   }*/
 }
-}
+/*
 ReactDOM.render(
 		<App />,
 		document.getElementById('react')
+	);*/
+ReactDOM.render(
+		<App />,
+		document.getElementById('react0')
 	);
 
 
@@ -135,29 +211,25 @@ class Upload extends React.Component {
 	}
 */
 
+/*
+
 class Upload extends React.Component {
 	  constructor(props) {
 	    super(props);
 	    this.handleSubmit = this.handleSubmit.bind(this);
 	    this.fileInput = React.createRef();
+	    //this.state = {filename : ""};
 	  }
 	  handleSubmit(event) {
 	    event.preventDefault();
-	    /*alert(
-	      `Selected file - ${
-	        this.fileInput.current.files[0].name
-	      }`
-	    );*/
 	    const file = this.fileInput.current.files[0];
 	    const formData = new FormData();
 		  formData.append("filename", file);
+		  filename = file.name;
 		  //const url = "http://localhost:8081/upload";
 		  const url = "http://47.105.81.242:8081/upload";
 		  fetch(url,{
 		      method:'POST',
-		      /*headers:{
-			      	'Content-Type':'multipart/form-data',
-			      },*/
 		      body:formData,
 		    })
 		    .then((response) => response.text() )
@@ -165,21 +237,15 @@ class Upload extends React.Component {
 		 
 		      console.log('responseData',responseData);
 		      alert("complete!！");
-		      location.reload();
-		      load();
+		      //location.reload();
+		      //load();
+		      ReactDOM.render(
+		    			<App />,
+		    			document.getElementById('react')
+		    		);
 		    })
 		    .catch((error)=>{console.error('error',error)});
 		  //formData.append("encType", "multipart/form-data");
-		  /*client({
-				method: 'POST',
-				headers:{
-			      	'Content-Type':'multipart/form-data',
-			      },
-				path: "/upload",
-				body:formData,
-			}).done(response => {
-				alert("complete!！");
-			});*/
 	  }
 
 	  render() {
@@ -201,7 +267,7 @@ ReactDOM.render(
 		<Upload />,
 		document.getElementById('react0')
 	);
-
+*/
 /*
 class Upload extends React.Component{
 	constructor(props) {

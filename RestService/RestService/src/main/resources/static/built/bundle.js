@@ -30085,9 +30085,9 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
 
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
@@ -30102,6 +30102,7 @@ var client = __webpack_require__(/*! ./client */ "./src/main/js/client.js"); //c
 
 var go = __webpack_require__(/*! ./go-debug */ "./src/main/js/go-debug.js"); //const jquery = require('./jquery');
 // end::vars[]
+//window.filename = "MED-4771_tmf-validation.trace";
 // tag::app[]
 
 
@@ -30116,10 +30117,14 @@ function (_React$Component) {
     _classCallCheck(this, App);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(App).call(this, props));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    _this.fileInput = React.createRef(); //this.state = {filename : ""};
+
     _this.state = {
       id: "",
       loginStatus: "",
-      responseBody: ""
+      responseBody: "",
+      filename: "MED-4771_tmf-validation.trace"
     };
     return _this;
   }
@@ -30130,7 +30135,7 @@ function (_React$Component) {
       client({
         method: 'GET',
         //path: "/login?username=admin&passwd=admin"
-        path: "/getArrowView?filename=MED-4649_generic_rest_APNS_tmf1.trace"
+        path: "/getArrowView?filename=" + this.state.filename
       }).done(function (response) {
         /*this.setState({
               	id:response.entity.id,
@@ -30185,16 +30190,95 @@ function (_React$Component) {
       });
     }
   }, {
+    key: "handleSubmit",
+    value: function handleSubmit(event) {
+      event.preventDefault();
+      /*alert(
+        `Selected file - ${
+          this.fileInput.current.files[0].name
+        }`
+      );*/
+
+      var file = this.fileInput.current.files[0];
+      var formData = new FormData();
+      formData.append("filename", file); //filename = file.name;
+      //const url = "http://localhost:8081/upload";
+
+      var url = "http://47.105.81.242:8081/upload";
+      fetch(url, {
+        method: 'POST',
+
+        /*headers:{
+         	'Content-Type':'multipart/form-data',
+         },*/
+        body: formData
+      }).then(function (response) {
+        return response.text();
+      }).then(function (responseData) {
+        console.log('responseData', responseData);
+        alert("complete!！"); //location.reload();
+        //load();
+        //this.state.filename = file.name;
+
+        client({
+          method: 'GET',
+          //path: "/login?username=admin&passwd=admin"
+          path: "/getArrowView?filename=" + file.name
+        }).done(function (response) {
+          /*this.setState({
+                	id:response.entity.id,
+                	loginStatus:response.entity.loginStatus,
+                	responseBody:response.entity.responseBody
+                });*/
+          var nodeDataArray = response.entity.nodeDataArray;
+          var linkDataArray = response.entity.linkDataArray;
+          linkDataArray.forEach(function (node) {
+            node.curviness = 20;
+          });
+          var content = {
+            "class": "go.GraphLinksModel",
+            "nodeKeyProperty": "id",
+            "nodeDataArray": nodeDataArray,
+            "linkDataArray": linkDataArray
+          };
+          myDiagram.model = go.Model.fromJson(content);
+        });
+      }).catch(function (error) {
+        console.error('error', error);
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
-      return React.createElement("div", null, React.createElement("span", null, this.state.id), " ", React.createElement("span", null, this.state.loginStatus), " ", React.createElement("span", null, this.state.responseBody));
+      return React.createElement("form", {
+        onSubmit: this.handleSubmit,
+        encType: "multipart/form-data"
+      }, React.createElement("label", null, "Upload file:", React.createElement("input", {
+        type: "file",
+        ref: this.fileInput
+      })), React.createElement("br", null), React.createElement("button", {
+        type: "submit"
+      }, "Submit"));
     }
+    /*
+    render(){
+    	return(
+    			<div><span>{this.state.id}</span> <span>{this.state.loginStatus}</span> <span>{this.state.responseBody}</span></div>
+    	);
+       }*/
+
   }]);
 
   return App;
 }(React.Component);
+/*
+ReactDOM.render(
+		<App />,
+		document.getElementById('react')
+	);*/
 
-ReactDOM.render(React.createElement(App, null), document.getElementById('react'));
+
+ReactDOM.render(React.createElement(App, null), document.getElementById('react0'));
 /*
 class Upload extends React.Component {
 	  constructor(props) {
@@ -30240,85 +30324,64 @@ class Upload extends React.Component {
 	}
 */
 
-var Upload =
-/*#__PURE__*/
-function (_React$Component2) {
-  _inherits(Upload, _React$Component2);
+/*
 
-  function Upload(props) {
-    var _this2;
+class Upload extends React.Component {
+	  constructor(props) {
+	    super(props);
+	    this.handleSubmit = this.handleSubmit.bind(this);
+	    this.fileInput = React.createRef();
+	    //this.state = {filename : ""};
+	  }
+	  handleSubmit(event) {
+	    event.preventDefault();
+	    const file = this.fileInput.current.files[0];
+	    const formData = new FormData();
+		  formData.append("filename", file);
+		  filename = file.name;
+		  //const url = "http://localhost:8081/upload";
+		  const url = "http://47.105.81.242:8081/upload";
+		  fetch(url,{
+		      method:'POST',
+		      body:formData,
+		    })
+		    .then((response) => response.text() )
+		    .then((responseData)=>{
+		 
+		      console.log('responseData',responseData);
+		      alert("complete!！");
+		      //location.reload();
+		      //load();
+		      ReactDOM.render(
+		    			<App />,
+		    			document.getElementById('react')
+		    		);
+		    })
+		    .catch((error)=>{console.error('error',error)});
+		  //formData.append("encType", "multipart/form-data");
+	  }
 
-    _classCallCheck(this, Upload);
+	  render() {
+	    return (
+	      <form onSubmit={this.handleSubmit} encType="multipart/form-data">
+	        <label>
+	          Upload file:
+	          <input type="file" ref={this.fileInput} />
+	        </label>
+	        <br />
+	        <button type="submit">Submit</button>
+	      </form>
+	    );
+	  }
+	}
 
-    _this2 = _possibleConstructorReturn(this, _getPrototypeOf(Upload).call(this, props));
-    _this2.handleSubmit = _this2.handleSubmit.bind(_assertThisInitialized(_this2));
-    _this2.fileInput = React.createRef();
-    return _this2;
-  }
 
-  _createClass(Upload, [{
-    key: "handleSubmit",
-    value: function handleSubmit(event) {
-      event.preventDefault();
-      /*alert(
-        `Selected file - ${
-          this.fileInput.current.files[0].name
-        }`
-      );*/
+ReactDOM.render(
+		<Upload />,
+		document.getElementById('react0')
+	);
+*/
 
-      var file = this.fileInput.current.files[0];
-      var formData = new FormData();
-      formData.append("filename", file); //const url = "http://localhost:8081/upload";
-
-      var url = "http://47.105.81.242:8081/upload";
-      fetch(url, {
-        method: 'POST',
-
-        /*headers:{
-         	'Content-Type':'multipart/form-data',
-         },*/
-        body: formData
-      }).then(function (response) {
-        return response.text();
-      }).then(function (responseData) {
-        console.log('responseData', responseData);
-        alert("complete!！");
-        location.reload();
-        load();
-      }).catch(function (error) {
-        console.error('error', error);
-      }); //formData.append("encType", "multipart/form-data");
-
-      /*client({
-      method: 'POST',
-      headers:{
-           	'Content-Type':'multipart/form-data',
-           },
-      path: "/upload",
-      body:formData,
-      }).done(response => {
-      alert("complete!！");
-      });*/
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      return React.createElement("form", {
-        onSubmit: this.handleSubmit,
-        encType: "multipart/form-data"
-      }, React.createElement("label", null, "Upload file:", React.createElement("input", {
-        type: "file",
-        ref: this.fileInput
-      })), React.createElement("br", null), React.createElement("button", {
-        type: "submit"
-      }, "Submit"));
-    }
-  }]);
-
-  return Upload;
-}(React.Component);
-
-ReactDOM.render(React.createElement(Upload, null), document.getElementById('react0'));
 /*
 class Upload extends React.Component{
 	constructor(props) {

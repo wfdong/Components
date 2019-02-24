@@ -78,7 +78,7 @@ public class TraceViewRestController extends AbstractController{
       //String filePath = "C:\\MyCode\\Components\\RestService\\RestService\\";
       String filePath = "/root/RestService/";
      //fileName = UUID.randomUUID() + suffixName;
-     File dest = new File(filePath + "MED-4649_generic_rest_APNS_tmf1.trace");
+     File dest = new File(filePath + fileName);
       if (!dest.getParentFile().exists()) {
             dest.getParentFile().mkdirs();
       }
@@ -96,7 +96,7 @@ public class TraceViewRestController extends AbstractController{
 	
 	
 	@RequestMapping({"/getArrowView"})
-	public Response getArrowView(@RequestParam(value="filename", defaultValue="RETRACE0000") String filename) {
+	public Response getArrowView(@RequestParam(value="filename", defaultValue="MED-4771_tmf-validation.trace") String filename) {
 		File file = new File(filename);
 		TraceView traceView = analysisTrace(file);
 		return traceView;
