@@ -90,8 +90,8 @@ class App extends React.Component{
 	    const formData = new FormData();
 		  formData.append("filename", file);
 		  //filename = file.name;
-		  //const url = "http://localhost:8081/upload";
-		  const url = "http://47.105.81.242:8081/upload";
+		  const url = "http://localhost:8081/upload";
+		  //const url = "http://47.105.81.242:8081/upload";
 		  fetch(url,{
 		      method:'POST',
 		      /*headers:{
